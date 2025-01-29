@@ -13,7 +13,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 from pathlib import Path
 from mpi4py import MPI # needed to run the MPI routines in amrio on archer2
-from amr_setup import get_genpath # needed to import amrfile
+from libs.amrsetup import get_genpath # needed to import amrfile
 
 genpath = get_genpath()
 sys.path.append(genpath)
@@ -209,5 +209,3 @@ if __name__== '__main__':
 
     args = parser.parse_args()
     main(args)
-
-                           
