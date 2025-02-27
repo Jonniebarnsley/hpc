@@ -7,3 +7,9 @@ inversions
 data
 postprocessing
 .local
+Chombo
+ocean_conn
+petsc-src
+petsc
+__pycache__
+inversions_old
