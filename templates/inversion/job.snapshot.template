@@ -17,7 +17,7 @@ export CH_OUTPUT_INTERVAL=0			# Reduces the number of pout files to 1
 
 # set paths
 export WORK=/mnt/lustre/a2fs-work2/work/n02/shared/jonnieb/
-export BISEXEC=$WORK/Bisicles/ocean_conn/code/exec2D/driver2d.Linux.64.CC.ftn.OPT.MPI.PETSC.GNU.ex
+export BISEXEC=$WORK/bisicles/ocean_conn/code/exec2D/driver2d.Linux.64.CC.ftn.OPT.MPI.PETSC.GNU.ex
 export BISINPT=inputs.inversion.@name
 export JOB=job.transient.@name
 
