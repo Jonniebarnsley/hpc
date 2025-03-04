@@ -1,0 +1,10 @@
+[submodule "bisicles/Chombo"]
+	path = bisicles/Chombo
+	url = https://github.com/applied-numerical-algorithms-group-lbnl/Chombo_3.2.git
+[submodule "bisicles/master"]
+	path = bisicles/master
+	url = https://github.com/ggslc/bisicles-uob.git
+[submodule "bisicles/invprob_sliding"]
+	path = bisicles/invprob_sliding
+	url = https://github.com/ggslc/bisicles-uob.git
+	branch = invprob_sliding
