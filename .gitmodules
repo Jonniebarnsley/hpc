@@ -1,7 +1,0 @@
-[submodule "bisicles/invprob_sliding"]
-	path = bisicles/invprob_sliding
-	url = https://github.com/ggslc/bisicles-uob.git
-	branch = invprob_sliding
-[submodule "bisicles/master"]
-	path = bisicles/master
-	url = https://github.com/ggslc/bisicles-uob.git
