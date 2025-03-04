@@ -7,11 +7,9 @@ inversions
 data
 postprocessing
 .local
-Chombo
-ocean_conn
-petsc-src
-petsc
-__pycache__
+_pycache__
 inversions_old
 miniconda3.sif
 rbinverse
+petsc
+petsc-src
