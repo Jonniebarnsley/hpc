@@ -1,6 +1,6 @@
 # Installing BISICLES on archer2
 
-These are instructions to build BISICLES on archer2. It includes steps to install BISICLES's third-party dependencies, [Chombo 3.2](https://commons.lbl.gov/display/chombo/Chombo+-+Software+for+Adaptive+Solutions+of+Partial+Differential+Equations) and [PETSc](https://petsc.org/release/). The instructions are borrowed heavilty from the official (but out of date) [BISICLES build instructions](https://davis.lbl.gov/Manuals/BISICLES-DOCS/readme.html) with added detail by Matt Trevors and myself. 
+These are instructions to build BISICLES on archer2. It includes steps to install BISICLES's third-party dependencies, [Chombo 3.2](https://commons.lbl.gov/display/chombo/Chombo+-+Software+for+Adaptive+Solutions+of+Partial+Differential+Equations) and [PETSc](https://petsc.org/release/). The instructions are borrowed heavily from the official [BISICLES build instructions](https://davis.lbl.gov/Manuals/BISICLES-DOCS/readme.html) with added detail by Matt Trevors and myself. 
 
 Before you start, it's a good idea to add some helpful lines to your `.bashrc`. I recommend the following:
 
@@ -112,7 +112,7 @@ Then open `$BISICLES_HOME/Chombo/lib/mk/local/Make.defs.archer2-system` and chan
 
 ## Build BISICLES
 
-There are a couple of things to compile in BISICLES. The first is the main executable.
+There are a few things to compile in BISICLES. The first is the main executable.
 
 ```bash
 > cd $BISICLES_HOME/master/code/exec2D
@@ -132,13 +132,18 @@ Compile all of these and more using:
 > make -j 4 all OPT=TRUE MPI=TRUE USE_PETSC=TRUE
 ```
 
-Once that's done, you're good to go!
+Lastly, the [BISICLES amrfile python module](https://davis.lbl.gov/Manuals/BISICLES-DOCS/libamrfile.html) is a useful tool for interacting directly with BISICLES `.hdf5` outputs in python. To use it, you just need to build the shared library `libamrfile.so`. It is also important to include the lines related to amrfile in your `.bashrc` so that archer2 can find the library, and you will need to set these again at the start of any slurm job that uses amrfile.
 
-If you ever want to install a different branch of BISICLES, you can do so easily using:
+```bash
+> cd $BISICLES_HOME/master/code/libamrfile
+> make -j 4 libamrfile.so
+```
+
+Once that's done, you're good to go! If you ever want to install a different branch of BISICLES, you can do so easily using:
 
 ```bash
 cd $BISICLES_HOME
 git clone -b <branch_name> https://github.com/ggslc/bisicles-uob.git <branch_name>
 ```
 
-and then repeat the steps in this subsection, building the main executable and filetool binaries.
+and then repeat the steps in this subsection, building the main executable, filetool binaries, and amrfile shared library.
