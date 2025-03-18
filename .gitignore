@@ -7,7 +7,7 @@ inversions
 data
 postprocessing
 .local
-_pycache__
+__pycache__
 inversions_old
 miniconda3.sif
 rbinverse
