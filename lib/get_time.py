@@ -1,10 +1,6 @@
 import sys
 from math import floor
 from mpi4py import MPI # needed to run the MPI routines in amrio
-#from amrsetup import get_genpath # needed to import amrfile
-
-#genpath = get_genpath()
-#sys.path.append(genpath)
 from amrfile import io as amrio
 
 def get_timestep(plotfile: str) -> int:
