@@ -6,18 +6,15 @@ Script to extract data from hdf5 plotfiles and save it as a netcdf.
 Usage: "python run_to_netcdf.py <run_directory> <variable>"
 '''
 
-import sys
 import argparse
 import numpy as np
 import xarray as xr
 from xarray import DataArray, Dataset
 from pathlib import Path
 from mpi4py import MPI # needed to run the MPI routines in amrio on archer2
-from libs.amrsetup import get_genpath # needed to import amrfile
-
-genpath = get_genpath()
-sys.path.append(genpath)
 from amrfile import io as amrio
+# NB: amrfile needs the BISICLES AMRfile directory added to PYTHONPATH and the libamrfile directory
+# added to LD_LIBRARY_PATH – see my .bashrc for an example
 
 MAX_TIME = 2300     # cuts off data at any time above this value
 FILL_VALUE = 0      # fill NaNs in netcdf with this value
@@ -46,31 +43,33 @@ specs = {
     'yVel'                           : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
     'xVel'                           : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
     'ybVel'                          : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
-    'xbVel'                          : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'}
+    'xbVel'                          : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
+    'xVelb'                          : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
+    'yVelb'                          : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
     }
 
-def extract_field(variable: str, plotfile: Path, lev: int=0, order: int=0) -> Dataset:
+def extract_field(variable: str, file: Path, lev: int=0, order: int=0) -> Dataset:
 
     '''
-    Extracts time and variable data from a .hdf5 plotfile and returns an xarray dataset
+    Extracts time and variable data from a .hdf5 file and returns an xarray dataset
 
     :param variable: variable name
-    :param plotfile: path to a BISICLES plotfile (plot.*.2d.hdf5)
+    :param file: path to a BISICLES output file (*.2d.hdf5)
     :param lev: level of refinement
-    :param order: 
+    :param order: ??? just leave as 0
 
-    :return time: time of plotfile
+    :return time: time of file
     :return ds: xarray dataset of variable
     '''
 
     # read hdf5
-    amrID = amrio.load(plotfile)
+    amrID = amrio.load(file)
     time = amrio.queryTime(amrID)
     lo, hi = amrio.queryDomainCorners(amrID, lev)
     y0, x0, field = amrio.readBox2D(amrID, lev, lo, hi, variable, order)
-    # NB y, x are ordered this way here due to a quirk of how the BISICLES plotfiles organise their
-    # axes. This order ensures, when we convert to netcdf, that x is on the horizontal axis and
-    # y on the vertical.
+    # NB y, x are ordered this way here due to a quirk of how the BISICLES output files organise 
+    # their axes. This order ensures, when we convert to netcdf, that x is on the horizontal axis 
+    # and y on the vertical.
 
     # convert into correct units
     conversion_factor = specs[variable]['conversion']
@@ -88,35 +87,35 @@ def extract_field(variable: str, plotfile: Path, lev: int=0, order: int=0) -> Da
 
     return time, ds
 
-def generate_netcdf(variable: str, plotdir: Path, outfile: Path, lev: int=0, overwrite: bool=False) -> None:
+def generate_netcdf(variable: str, dir: Path, outnc: Path, lev: int=0, overwrite: bool=False) -> None:
 
     '''
-    Generates a netcdf of the given variable from the plotfiles of a BISICLES run.
+    Generates a netcdf of the given variable from the output files of a BISICLES run.
 
     :param variable:    variable name
-    :param plotdir:     path to plotfile directory
-    :param outfile:     path for output netcdf
+    :param dir:         path to output file directory
+    :param outnc:       path for output netcdf
     :param lev:         level of refinement (0 by default, the most coarse resolution)
     :param overwrite:   will overwrite any existing netcdfs if True (False by default)
     '''
 
     # skip if file already exists
-    if outfile.is_file() and not overwrite:
-        print(f'{outfile} already exists.')
+    if outnc.is_file() and not overwrite:
+        print(f'{outnc} already exists.')
         return
 
-    # Instantiate lists in which to store the time and data from each plotfile
+    # Instantiate lists in which to store the time and data from each file
     times = []
     timeslices = []
-    plotfiles = sorted(plotdir.glob('plot.*.2d.hdf5'))
-    total = len(plotfiles)
-    for i, plotfile in enumerate(plotfiles):
+    files = sorted(dir.glob('*.2d.hdf5'))
+    total = len(files)
+    for i, file in enumerate(files):
         
-        # print plotfile name and number to keep track of progress
-        print(f'({i+1}/{total}) {plotfile.name}')
+        # print filename and number to keep track of progress
+        print(f'({i+1}/{total}) {file.name}')
 
-        # get datasets from plotfiles and associated time coordinates
-        time, timeslice = extract_field(variable, str(plotfile), lev=lev)
+        # get datasets from files and associated time coordinates
+        time, timeslice = extract_field(variable, str(file), lev=lev)
         times.append(time)
         timeslices.append(timeslice)
 
@@ -131,7 +130,8 @@ def generate_netcdf(variable: str, plotdir: Path, outfile: Path, lev: int=0, ove
     ds[variable].encoding.update({'zlib': True})
     
     # save netcdf
-    ds.to_netcdf(outfile, encoding={variable: {
+    print(f"generating {outnc}...")
+    ds.to_netcdf(outnc, encoding={variable: {
         'zlib'          : True, 
         'complevel'     : 6, 
         'dtype'         : dtype,
@@ -190,8 +190,8 @@ def main(args) -> None:
     '''
 
     lev = args.lev if args.lev else 0
-    outfile_path = get_outfile_path(args.variable, args.plotdir, args.savedir, lev)
-    generate_netcdf(args.variable, args.plotdir, outfile_path, lev=lev)
+    outfile_path = get_outfile_path(args.variable, args.directory, args.savedir, lev)
+    generate_netcdf(args.variable, args.directory, outfile_path, lev=lev)
 
 
 if __name__== '__main__':
@@ -201,7 +201,7 @@ if __name__== '__main__':
 
     # add arguments
     parser.add_argument("variable", type=str, help="variable name") 
-    parser.add_argument("plotdir", type=str, help="Path to z_base netcdfs")
+    parser.add_argument("directory", type=str, help="Path to BISICLES output directory")
     parser.add_argument("savedir", type=str, help="Path to save directory")
 
     # add optional arguments
