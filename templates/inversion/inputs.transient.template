@@ -19,6 +19,7 @@ L1L2.additionalVelocitySIAOnly = true
 amr.additional_velocity = false # false for inverse problem, true for forward
 main.rateFactor = patersonRate
 patersonRate.epsSqr0 = 1.0e-12
+patersonRate.A0_multiplier = @A0_multiplier
 
 # geometry input data
 geometry.problem_type = LevelData
@@ -28,8 +29,13 @@ inputLevelData.topographyName = topg
 
 # friction input data
 geometry.beta_type = LevelData
-inputLevelData.frictionFile = /work/n02/shared/jonnieb/data/antarctica_bedmachine_inverse_1km.2d.hdf5 
+inputLevelData.frictionFile = /work/n02/shared/jonnieb/data/antarctica_bedmachine_inverse_1km.2d.hdf5
 inputLevelData.frictionName = btrc
+
+# muCoef input data
+#muCoefficient.type = LevelData
+#inputLevelData.muCoefFile = friction.@name.2d.hdf5 # taken from end of snapshot inversion
+#inputLevelData.muCoefName = muCoef
 
 # temperature input data 
 temperature.type = LevelData
@@ -128,12 +134,12 @@ amr.max_dt_grow_factor = 2.0
 amr.time_step_ticks = 0
 
 # plotting options
-amr.plot_time_interval = 0.5
-amr.plot_prefix = plot/plot.@name.3lev
+amr.plot_time_interval = 0.125
+amr.plot_prefix = plot/plot.transient-inverse.@name.3lev
 
 # checkpoints
-amr.check_interval = 24
-amr.check_prefix = chk/chk.@name.3lev
+amr.check_interval = 16
+amr.check_prefix = chk/chk.transient-inverse.@name.3lev
 amr.check_overwrite = 0
 
 # AMR mesh options
@@ -168,15 +174,15 @@ amr.verbosity = 5
 
 amr.velocity_solver_type = 6 		# Inverse problem
 amr.velocity_solve_interval = 1 	# hopefully OK when relaxing geometry
-amr.evolve_thickness = false		# snapshot inversion
+amr.evolve_thickness = true			# transient inversion
 
 control.velMisfitType = speed 				# match observed speed (not velocity)
-control.minTimeBetweenOptimizations = 0.5	# time in years between (transient) inverse problems
+control.minTimeBetweenOptimizations = 0.25	# time in years between inverse problems
 control.minLevelForOptimization = 3			# level of refinement
 
 control.dtTypical = 0.04
 control.writeInnerSteps = false
-control.outerStepFileNameBase = ctrl/ctrl.@name.
+control.outerStepFileNameBase = ctrl/ctrl.transient-inverse.@name.
 
 # field of data expressing confidence in speed observations. 0 for no confidence
 control.velCoef.type = LevelData
@@ -205,7 +211,7 @@ control.gradMuCoefsqRegularization = @aPhi
 # initial guess
 control.initialLowerC = 1.0
 control.initialUpperC = 1.0e+5
-control.initialLowerMuCoef = 1.0e-1
+control.initialLowerMuCoef = 1.0e-2
 control.initialUpperMuCoef = 1.10
 
 # some box constraints. 
@@ -217,9 +223,8 @@ control.upperX1 = 0.025
 
 # termination condition    
 control.writeInnerSteps = false
-control.CGmaxIter = 100 		# 100 iterations for snapshot inversion, 16 for transient
-control.CGhang = 1000			# deliberately high – termination instead determined by CGtol
-control.CGtol = 1e-2 			# break when ||f'(x)||^2 is less than CGtol^2 of its original value 
-control.CGhangLimit = 1.0 		# does nothing unless using Matt's Biiscles branch
+control.CGmaxIter = 16	 		# 100 iterations for snapshot inversion, 16 for transient
+control.CGhang = 1000			# deliberately high – don't terminate early
+control.CGtol = 1e-10			# break when ||f'(x)||^2 is less than CGtol^2 of its original value 
 control.CGsecantMaxIter = 20
 control.CGsecantParameter = 1.0e-7

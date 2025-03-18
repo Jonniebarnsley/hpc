@@ -17,13 +17,19 @@ export CH_OUTPUT_INTERVAL=0			# Reduces the number of pout files to 1
 
 # set paths
 export WORK=/mnt/lustre/a2fs-work2/work/n02/shared/jonnieb/
-export BISEXEC=$WORK/bisicles/ocean_conn/code/exec2D/driver2d.Linux.64.CC.ftn.OPT.MPI.PETSC.GNU.ex
-export BISINPT=inputs.inversion.@name
-export JOB=job.transient.@name
+export BISEXEC=$WORK/bisicles/invprob_sliding/code/exec2D/driver2d.Linux.64.CC.ftn.OPT.MPI.PETSC.GNU.ex
+export BISINPT=inputs.snapshot.@name
+export JOB=job.snapshot.@name
 
+# set constants
+export END=200 # target number of total iterations
+export INCR=50 # increment number of iterations per job
+
+# load python
 module load cray-python	
 
-source $WORK/libs/utils.sh
+# load min and time_elapsed
+source $WORK/lib/utils.sh
 
 start=$(date +%s)
 echo Start time is `date`
@@ -31,12 +37,28 @@ echo Start time is `date`
 
 # make directories
 cd $SLURM_SUBMIT_DIR
-mkdir -p plot chk ctrl hist pout output error
+mkdir -p plot chk ctrl hist pout output error cg-chk
 
 
 # update pout
 echo "" >> $BISINPT
 echo "main.poutBaseName = pout/pout.snapshot.$SLURM_JOB_ID" >> $BISINPT
+
+
+# update cg-checkpoint
+last_cg_chk=$(ls -tr cg-chk/*.2d.hdf5 | tail -n 1)
+num_cg_iter=$(ls cg-chk | wc -l)
+last_iter=$((num_cg_iter * 10))
+if [ -n "$last_cg_chk" ]; then
+	echo "control.CGreadStateFile = $last_cg_chk" >> $BISINPT
+	echo "control.CGreadStateIter = $last_iter" >> $BISINPT
+fi
+
+
+# update maxIter
+newIter=$(( last_iter + $INCR + 1 )) # +1 because cg-checkpoints aren't printed on last iteration
+maxIter=$(min $newIter $END)
+echo "control.CGmaxIter = $maxIter" >> $BISINPT
 
 
 # run BISICLES
@@ -49,16 +71,9 @@ ls ctrl | head -n 1 | xargs -I {} mv ctrl/{} hist
 ls ctrl | tail -n 1 | xargs -I {} mv ctrl/{} hist
 rm ctrl/*
 
-# prepare transient inversion
-#echo "" >> $BISINPT
-#echo "# transient inversion" >> $BISINPT
-#echo "amr.evolve_thickness = true" >> $BISINPT
-#echo "control.CGmaxIter = 16" >> $BISINPT
-
-# queue tansient run
-#if [ ! -e core ]; then
-#	sbatch $JOB
-#fi
+if [ ! -f core ] && [ $maxIter -lt $END ]; then
+	sbatch $JOB
+fi
 
 end=$(date +%s)
 echo End time is `date`
