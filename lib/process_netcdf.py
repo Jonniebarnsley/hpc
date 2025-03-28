@@ -165,7 +165,7 @@ def get_outfile_path(variable: str, plotdir: Path, savedir: Path, lev: int) -> P
     run = plotdir.parent
     ensemble = run.parent
 
-    varsavedir = savedir / lev / variable 
+    varsavedir = savedir / f'{lev}lev' / variable 
     varsavedir.mkdir(parents=True, exist_ok=True)
 
     outpath = varsavedir / f'{ensemble.name}_{run.name}_{variable}_{lev}lev.nc'
@@ -188,10 +188,14 @@ def main(args) -> None:
     ensemble directory structure [see get_outfile_path()], then processes and saves
     the netcdf.
     '''
-
+    
+    variable = args.variable
+    directory = Path(args.directory)
+    savdir = Path(args.savedir)
     lev = args.lev if args.lev else 0
-    outfile_path = get_outfile_path(args.variable, args.directory, args.savedir, lev)
-    generate_netcdf(args.variable, args.directory, outfile_path, lev=lev)
+
+    outfile_path = get_outfile_path(variable, directory, savedir, lev)
+    generate_netcdf(variable, directory, outfile_path, lev=lev)
 
 
 if __name__== '__main__':
