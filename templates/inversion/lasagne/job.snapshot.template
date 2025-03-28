@@ -1,0 +1,82 @@
+#!/bin/bash
+#SBATCH --job-name=@name
+#SBATCH -o output/o.%j
+#SBATCH -e error/e.%j
+#SBATCH --partition=standard
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=128
+#SBATCH --time=24:00:00
+#SBATCH --qos=standard
+#SBATCH --account=n02-LDNDTP1
+#SBATCH --hint=nomultithread
+#SBATCH --distribution=block:block
+
+# set options
+export FI_MR_CACHE_MAX_COUNT=0		# Disable memory registration cache
+export CH_OUTPUT_INTERVAL=0			# Reduces the number of pout files to 1
+
+# set paths
+export WORK=/mnt/lustre/a2fs-work2/work/n02/shared/jonnieb/
+export BISEXEC=$WORK/bisicles/invprob_sliding/code/exec2D/driver2d.Linux.64.CC.ftn.OPT.MPI.PETSC.GNU.ex
+export BISINPT=inputs.snapshot.@name
+export JOB=job.snapshot.@name
+
+# set constants
+export END=200 # target number of total iterations
+export INCR=50 # increment number of iterations per job
+
+# load python
+module load cray-python	
+
+# load min and time_elapsed
+source $WORK/lib/utils.sh
+
+start=$(date +%s)
+echo Start time is `date`
+
+
+# make directories
+cd $SLURM_SUBMIT_DIR
+mkdir -p plot chk ctrl hist pout output error cg-chk
+
+
+# update pout
+echo "" >> $BISINPT
+echo "main.poutBaseName = pout/pout.snapshot.$SLURM_JOB_ID" >> $BISINPT
+
+
+# update cg-checkpoint
+last_cg_chk=$(ls -tr cg-chk/*.2d.hdf5 | tail -n 1)
+num_cg_iter=$(ls cg-chk | wc -l)
+last_iter=$((num_cg_iter * 10))
+if [ -n "$last_cg_chk" ]; then
+	echo "control.CGreadStateFile = $last_cg_chk" >> $BISINPT
+	echo "control.CGreadStateIter = $last_iter" >> $BISINPT
+fi
+
+
+# update maxIter
+newIter=$(( last_iter + $INCR + 1 )) # +1 because cg-checkpoints aren't printed on last iteration
+maxIter=$(min $newIter $END)
+echo "control.CGmaxIter = $maxIter" >> $BISINPT
+
+
+# run BISICLES
+echo "running BISICLES..."
+srun $BISEXEC $BISINPT
+echo "BISICLES done"
+
+# tidy up
+ls ctrl | head -n 1 | xargs -I {} mv ctrl/{} hist
+ls ctrl | tail -n 1 | xargs -I {} mv ctrl/{} hist
+rm ctrl/*
+
+if [ ! -f core ] && [ $maxIter -lt $END ]; then
+	sbatch $JOB
+fi
+
+end=$(date +%s)
+echo End time is `date`
+echo Time elapsed: $(time_elapsed $start $end)
+
+
