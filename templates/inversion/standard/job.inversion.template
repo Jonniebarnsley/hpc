@@ -23,7 +23,7 @@ export JOB=job.inversion.@name
 
 # set constants
 export END=500 	# target number of total iterations
-export INCR=100 # increment number of iterations per job
+export INCR=200 # increment number of iterations per job
 
 # load python
 module load cray-python	
@@ -46,7 +46,7 @@ echo "main.poutBaseName = pout/pout.$SLURM_JOB_ID" >> $BISINPT
 
 
 # update cg-checkpoint
-last_cg_chk=$(ls -tr cg-chk/*.2d.hdf5 | tail -n 1)
+last_cg_chk=$(ls -tr cg-chk/*.2d.hdf5 2>/dev/null | tail -n 1)
 num_cg_iter=$(ls cg-chk | wc -l)
 last_iter=$((num_cg_iter * 10))
 if [ -n "$last_cg_chk" ]; then
@@ -67,7 +67,7 @@ srun $BISEXEC $BISINPT
 echo "BISICLES done"
 
 # tidy up
-mv ctrl/ctrl.*00.2d.hdf5 hist
+mv ctrl/ctrl.*0.2d.hdf5 hist
 rm ctrl/*
 
 if [ ! -f core ] && [ $maxIter -lt $END ]; then
