@@ -191,7 +191,7 @@ def main(args) -> None:
     
     variable = args.variable
     directory = Path(args.directory)
-    savdir = Path(args.savedir)
+    savedir = Path(args.savedir)
     lev = args.lev if args.lev else 0
 
     outfile_path = get_outfile_path(variable, directory, savedir, lev)
