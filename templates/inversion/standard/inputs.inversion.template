@@ -83,7 +83,7 @@ amr.initial_velocity_guess_solver_type = 1 # JFNK
 
 #JFNK parameters
 JFNKSolver.vtopSafety = 0.95
-JFNKSolver.minPicardIterations = 3
+JFNKSolver.minPicardIterations = 100 # ignore JFNK
 JFNKSolver.maxIter = 12
 JFNKSolver.absTol = 1.0
 JFNKSolver.relTol = 1.0e-3
@@ -192,10 +192,10 @@ control.xVel.timeStep = 100.0
 control.xVel.offset = 0
 control.xVel.linearInterp = false
 
-# field of data expressing confidence in speed observations. 0 for no confidence
+# field of data expressing confidence in speed observations. 0 for no confidence, 1 for full confidence
 control.velCoef.type = LevelData
 control.velCoef.fileFormat = /work/n02/shared/jonnieb/data/MEaSUREs_antarctica_v2_bisicles_1km.2d.hdf5
-control.velCoef.name = notnull
+control.velCoef.name = not_slow_or_thin
 control.velCoef.n = 4
 control.velCoef.startTime = 0.0
 control.velCoef.timeStep = 100.0
@@ -209,18 +209,18 @@ control.gradMuCoefsqRegularization = @aPhi
 # initial guess
 control.initialLowerC = 1.0
 control.initialUpperC = 1.0e+5
-control.initialLowerMuCoef = 1.0e-2
-control.initialUpperMuCoef = 1.10
+control.initialLowerMuCoef = 0.05
+control.initialUpperMuCoef = 1.01
 
 # some box constraints. 
 control.boundMethod = Projection
-control.lowerX0 = -5
-control.upperX0 = 5.0
-control.lowerX1 = -3.0
+control.lowerX0 = -1
+control.upperX0 = 1.0
+control.lowerX1 = -1.0
 control.upperX1 = 0.025
 
 # termination condition – deliberately strict to ensure no early termination
-control.CGhang = 1000			# stop when ||fm(x)||^2 / ||fm_old(x)||^2 > CGhang
+control.CGhang = 4				# stop when ||fm(x)||^2 / ||fm_old(x)||^2 > CGhang
 control.CGtol = 1e-10 			# stop when ||f'(x)||^2 < CGtol^2 * its original value
 
 # conjugate gradient descent consists of 'outer' iterations, which are the usual gradient descent steps, and 'inner'
@@ -229,3 +229,4 @@ control.writeInnerSteps = false
 control.CGmaxIter = 100 		# max number of outer iterations
 control.CGsecantMaxIter = 8		# max number of inner iterations
 control.CGsecantParameter = 1.0e-7
+control.CGlineSearchMethod = 20 # 0 - secant, 1 bisection, 20 new secant
