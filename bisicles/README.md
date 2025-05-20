@@ -98,21 +98,31 @@ Again, follow these instructions. This takes a few more minutes, but when it's d
 
 ## Chombo setup
 
-Matt Trevors has configured Chombo to work with ARCHER2. Replicate his setup by copying his file `Make.defs.archer2-system` into your own Chombo directories:
+Chombo is configured through a file `Make.defs.local`, which sits in the `lib/mk/` subdirectory of Chombo. In `lib/mk/local`, you can see examples of such a setup for a number of different computing systems, including ARCHER, the predecessor to ARCHER2 (obviously). However, the standard release of Chombo is missing a `Make.defs` for ARCHER2, so we'll have to add our own. The easiest approach to this will be to copy the equivalent file from my own shared directory on ARCHER2. Start with:
 
 ```bash
-> cp /mnt/lustre/a2fs-work2/work/n02/n02/mt15768/Bisicles/Chombo/lib/mk/local/Make.defs.archer2-system $BISICLES_HOME/Chombo/lib/mk/local
+> cp /work/n02/shared/jonnieb/bisicles/Chombo/lib/mk/local/Make.defs.archer2-system $BISICLES_HOME/Chombo/lib/mk/local
 ```
 
-Then open `$BISICLES_HOME/Chombo/lib/mk/local/Make.defs.archer2-system` and change the line defining BISICLES_HOME to your own version of BISICLES_HOME. Lastly, make a symbolic link as follows:
+Then open `$BISICLES_HOME/Chombo/lib/mk/local/Make.defs.archer2-system` and change the line defining BISICLES_HOME to your own version of BISICLES_HOME. Lastly, make a symbolic link to `Make.defs.local` as follows:
 
 ```bash
 > ln -s $BISICLES_HOME/Chombo/lib/mk/local/Make.defs.archer2-system $BISICLES_HOME/Chombo/lib/mk/Make.defs.local
 ```
 
+These definitions are also inherited by BISICLES when compiling the main executable.
+
 ## Build BISICLES
 
-There are a few things to compile in BISICLES. The first is the main executable.
+BISICLES is more or less ready to compile out the box. However, if you plan to use the GIA functionality in BISICLES, you will need to add a flag so that the compiler doesn't skip the GIA sections of the source code. Probably the best place to include this will be in `$BISICLES_HOME/master/mk/Make.defs.archer2`. Add the line:
+
+```bash
+CPPFLAGS += -DBUELERGIA
+```
+
+`Make.defs.archer2` is (by default) symbolically linked to `Make.defs.ln01-6` in the same directory where `lnXX` are the ARCHER2 login nodes. These definitions are then inherited by the main BISICLES `Make.defs`, along with the Chombo definitions we configured earlier.
+
+There are a few things to compile in BISICLES. The first is the main executable, done by:
 
 ```bash
 > cd $BISICLES_HOME/master/code/exec2D
@@ -123,7 +133,7 @@ You should now have the binary `driver2d.Linux.64.CC.ftn.OPT.MPI.PETSC.GNU.ex`. 
 
 - `flatten`: Flattens `.hdf5` files (BISICLES's adaptive-mesh outputs) to even-gridded netcdfs
 - `nctoamr`: Converts in the opposite direction, from netcdfs to BISICLES-compatible `.hdf5`
-- `extract`: Extracts some specified variables from a BISICLES `plot.*` file
+- `extract`: Extracts some specified variables from a BISICLES `.hdf5` file to a new, smaller file
 
 Compile all of these and more using:
 
@@ -146,4 +156,4 @@ cd $BISICLES_HOME
 git clone -b <branch_name> https://github.com/ggslc/bisicles-uob.git <branch_name>
 ```
 
-and then repeat the steps in this subsection, building the main executable, filetool binaries, and amrfile shared library.
+and then repeat the steps in this subsection, activating GIA in `mk/`, building the main executable, filetool binaries, and amrfile shared library.
