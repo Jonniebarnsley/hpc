@@ -8,19 +8,19 @@
 #   - ensemble_dir: path to ensemble home directory
 #   - job_template: path to a template job script with '@VAR' in place of variable names
 
-usage() { echo "Usage: $0 <ensemble_dir> <job_template>" 1>&2; exit 1; }
+usage() { echo "Usage: $0 <job_array_template> <ensemble_directory> <num_runs> <lev>" 1>&2; exit 1; }
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 4 ]; then
     usage
 fi
 
-ENSEMBLE=$1
-TEMPLATE=$2
-outdir=$ENSEMBLE/postprocessing
-mkdir -p $outdir
+TEMPLATE=$1
+ENSEMBLE=$2
+NUM_RUNS=$3
+LEV=$4
+OUTDIR=$ENSEMBLE/postprocessing
+mkdir -p $OUTDIR
 
-for var in 'calvingFlux' 'calvingRate' 'dragCoef' 'iceFrac' 'sTemp' 'viscosityCoef' 'waterDepth'; do
-    sed -e s/@VAR/$var/ $TEMPLATE > "$outdir/process_${var}.sh"
-    cd $outdir
-    sbatch process_${var}.sh
+for VAR in 'thickness' 'Z_base' 'Z_surface' 'xVel' 'yVel' 'dThickness/dt'; do
+    sed -e "s/@VAR/$VAR/g" -e "s/@LEV/$LEV/g" -e "s/@NUM_RUNS/$NUM_RUNS/g" $TEMPLATE > "$OUTDIR/job_array.process_${VAR}.sh"
 done
