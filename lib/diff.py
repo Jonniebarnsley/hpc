@@ -26,37 +26,38 @@ def parseinp(inp):
 
 def main(newinp, oldinp):
 
-	'''
-	takes paths to two input files and prints a dataframe of BISICLES
-	options where the values in each input file are different.
-	'''
+    '''
+    takes paths to two input files and prints a dataframe of BISICLES
+    options where the values in each input file are different.
+    '''
 
-	with open(newinp) as file:
-		newtxt = file.read().splitlines()
-	with open(oldinp) as file:
-		oldtxt = file.read().splitlines()
+    with open(newinp) as file:
+        newtxt = file.read().splitlines()
+    with open(oldinp) as file:
+        oldtxt = file.read().splitlines()
 	
-	newops = parseinp(newtxt)
-	oldops = parseinp(oldtxt)
-	
-	keys = []
-	old = []
-	new = []
+    newops = parseinp(newtxt)
+    oldops = parseinp(oldtxt)
 
-	for key in oldops.keys():
-		oldval = oldops[key]
-		try:
-			newval = newops[key]
-		except KeyError:	# if option not selected in new input
-			newval = ''
-		if oldval != newval: # if inputs differ
-			keys.append(key)
-			old.append(oldval)
-			new.append(newval)
+    keys = []
+    old = []
+    new = []
+
+    for key in oldops.keys():
+        oldval = oldops[key]
+        try:
+            newval = newops[key]
+        except KeyError:	# if option not selected in new input
+            newval = ''
+        if oldval != newval: # if inputs differ
+            keys.append(key)
+            old.append(oldval)
+            new.append(newval)
 	
-	# construct and print dataframe
-	df = pd.DataFrame({'option': keys, oldinp: old, newinp: new})
-	print(df)
+    # construct and print dataframe
+    df = pd.DataFrame({'option': keys, oldinp: old, newinp: new})
+    pd.set_option('display.max_rows', None)
+    print(df)
 
 
 if __name__ == "__main__":
