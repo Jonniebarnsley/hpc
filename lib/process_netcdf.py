@@ -12,12 +12,13 @@ import xarray as xr
 from xarray import DataArray, Dataset
 from pathlib import Path
 from mpi4py import MPI # needed to run the MPI routines in amrio on archer2
-from amrfile import io as amrio
 # NB: amrfile needs the BISICLES AMRfile directory added to PYTHONPATH and the libamrfile directory
 # added to LD_LIBRARY_PATH – see my .bashrc for an example
+from amrfile import io as amrio
+
 
 MAX_TIME = 2300     # cuts off data at any time above this value
-FILL_VALUE = 0      # fill NaNs in netcdf with this value
+FILL_VALUE = -9999  # fill NaNs in netcdf with this value
 
 # specs for encoding data.
 specs = {
@@ -46,6 +47,9 @@ specs = {
     'xbVel'                          : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
     'xVelb'                          : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
     'yVelb'                          : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
+    'Cwshelf'                        : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':''},
+    'muCoef'                         : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':''},
+    'dThickness/dt'                  : {'conversion':1.0, 'prec':0.01, 'dtype':'int32', 'units':'m/yr'},
     }
 
 def extract_field(variable: str, file: Path, lev: int=0, order: int=0) -> Dataset:
@@ -66,22 +70,21 @@ def extract_field(variable: str, file: Path, lev: int=0, order: int=0) -> Datase
     amrID = amrio.load(file)
     time = amrio.queryTime(amrID)
     lo, hi = amrio.queryDomainCorners(amrID, lev)
-    y0, x0, field = amrio.readBox2D(amrID, lev, lo, hi, variable, order)
-    # NB y, x are ordered this way here due to a quirk of how the BISICLES output files organise 
-    # their axes. This order ensures, when we convert to netcdf, that x is on the horizontal axis 
-    # and y on the vertical.
-
+    x0, y0, field = amrio.readBox2D(amrID, lev, lo, hi, variable, order)
+    
     # convert into correct units
     conversion_factor = specs[variable]['conversion']
+    units = specs[variable]['units']
     field_in_units = np.asarray(field) * conversion_factor
+    variable = variable.replace('/', '') # dThickness/dt causes problems – can't have '/' in var name
 
     # make Dataset
     ds = Dataset({
         variable: DataArray(
             data = field_in_units,
-            dims = ['x', 'y'],
+            dims = ['y', 'x'],
             coords = {'x': x0, 'y': y0},
-            attrs = {'units': specs[variable]['units']}
+            attrs = {'units': units}
         )})
     amrio.free(amrID)
 
@@ -104,10 +107,14 @@ def generate_netcdf(variable: str, dir: Path, outnc: Path, lev: int=0, overwrite
         print(f'{outnc} already exists.')
         return
 
-    # Instantiate lists in which to store the time and data from each file
+    files = sorted(dir.glob('*.2d.hdf5'))
+    total = len(files)
+    if total == 0:
+        print(f"No plotfiles found in {dir}")
+        return
+
     times = []
     timeslices = []
-    files = sorted(dir.glob('*.2d.hdf5'))
     total = len(files)
     for i, file in enumerate(files):
         
@@ -127,6 +134,8 @@ def generate_netcdf(variable: str, dir: Path, outnc: Path, lev: int=0, overwrite
     # get enconding info
     precision = specs[variable]['prec']
     dtype = specs[variable]['dtype']
+    
+    variable = variable.replace('/', '')
     ds[variable].encoding.update({'zlib': True})
     
     # save netcdf
@@ -164,6 +173,7 @@ def get_outfile_path(variable: str, plotdir: Path, savedir: Path, lev: int) -> P
     plotdir = plotdir.resolve()
     run = plotdir.parent
     ensemble = run.parent
+    variable = variable.replace('/', '') # dThickness/dt causes problems with path
 
     varsavedir = savedir / f'{lev}lev' / variable 
     varsavedir.mkdir(parents=True, exist_ok=True)
@@ -178,7 +188,7 @@ def main(args) -> None:
     When called from the command line, this script takes three arguments:
 
         - The variable to process
-        - The plotdile directory to work on
+        - The plotfile directory to work on
         - The save directory in which the netcdfs will be saved
 
     Additionally, the option --lev can be called with the level of refinement with
