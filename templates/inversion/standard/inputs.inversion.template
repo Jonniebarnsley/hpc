@@ -42,7 +42,7 @@ inputLevelData.readInternalEnergy = true
 main.basalFrictionRelation = powerLaw
 BasalFrictionPressureLimitedLaw.coefficient = 1.0
 BasalFrictionPressureLimitedLaw.basalFrictionRelation = powerLaw
-BasalFrictionPowerLaw.m = 1.0 # linear sliding law for inverse problem
+BasalFrictionPowerLaw.m = @m
 
 # physical constants
 constants.ice_density = 917.0
@@ -209,14 +209,14 @@ control.gradMuCoefsqRegularization = @aPhi
 # initial guess
 control.initialLowerC = 1.0
 control.initialUpperC = 1.0e+5
-control.initialLowerMuCoef = 0.05
-control.initialUpperMuCoef = 1.01
+control.initialLowerMuCoef = 1.0e-2
+control.initialUpperMuCoef = 1.10
 
 # some box constraints. 
 control.boundMethod = Projection
-control.lowerX0 = -1
-control.upperX0 = 1.0
-control.lowerX1 = -1.0
+control.lowerX0 = -5.0
+control.upperX0 = 5.0
+control.lowerX1 = -3.0
 control.upperX1 = 0.025
 
 # termination condition – deliberately strict to ensure no early termination
