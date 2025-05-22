@@ -114,7 +114,7 @@ These definitions are also inherited by BISICLES when compiling the main executa
 
 ## Build BISICLES
 
-BISICLES is more or less ready to compile out the box. However, if you plan to use the GIA functionality in BISICLES, you will need to add a flag so that the compiler doesn't skip the GIA sections of the source code. Probably the best place to include this will be in `$BISICLES_HOME/master/mk/Make.defs.archer2`. Add the line:
+BISICLES is more or less ready to compile out the box. However, if you plan to use the GIA functionality in BISICLES, you will need to add a flag so that the compiler doesn't skip the GIA sections of the source code. Probably the best place to include this will be in `$BISICLES_HOME/master/mk/Make.defs.archer2`. Open this file and add the line:
 
 ```bash
 CPPFLAGS += -DBUELERGIA
