@@ -25,7 +25,7 @@ export BISICLES_BRANCH=$WORK/bisicles/master
 module load cray-python
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$BISICLES_BRANCH/code/libamrfile
 export PYTHONPATH=$PYTHONPATH:$BISICLES_BRANCH/code/libamrfile/python/AMRFile
-source $WORK/postprocessing/bin/activate
+source $WORK/env/bin/activate
 
 # get run directory from slurm array ID
 RUN_ID=$(printf "%02d" $SLURM_ARRAY_TASK_ID)

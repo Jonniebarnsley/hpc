@@ -18,7 +18,7 @@ fi
 running_jobs=$(squeue --noheader --format=%j --me)
 
 ENSEMBLE=$1
-PYTHON_ENV=$WORK/postprocessing # python envrionment using venv
+PYTHON_ENV=$WORK/env # python envrionment using venv
 MAX_TIME=9990 # time at which a job should be considered complete
 
 # activate python environment

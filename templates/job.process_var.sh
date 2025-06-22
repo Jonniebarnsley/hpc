@@ -5,8 +5,8 @@
 #SBATCH --partition=standard
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=128
-#SBATCH --time=00:20:00
-#SBATCH --qos=short
+#SBATCH --time=02:00:00
+#SBATCH --qos=standard
 #SBATCH --account=n02-LDNDTP1
 #SBATCH --hint=nomultithread
 #SBATCH --distribution=block:block
@@ -19,7 +19,7 @@ export BISICLES=$WORK/bisicles/master
 module load cray-python
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$BISICLES/code/libamrfile
 export PYTHONPATH=$PYTHONPATH:$BISICLES/code/libamrfile/python/AMRFile
-source $WORK/postprocessing/bin/activate
+source $WORK/env/bin/activate
 
 # load some helpful functions
 source $WORK/lib/utils.sh
