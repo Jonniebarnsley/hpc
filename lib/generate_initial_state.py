@@ -7,24 +7,66 @@ from xarray import Dataset, DataArray
 # import amrfile – requires PYTHONPATH and LD_LIBRARY_PATH correctly set
 from amrfile import io as amrio
 
-def convert_C(C: DataArray, xVel: DataArray, yVel: DataArray, m: int=1) -> DataArray:
+def convert_C(C: DataArray, xVel: DataArray, yVel: DataArray, m: float=1.0, uf: float=None) -> DataArray:
 
     '''
-    Inverse problem is solved with Weertman exponent m = 1. We would like to 
-    convert the inverted field for Weertman coefficient C into an equivalent 
-    field for any m such that friction is unchanged upon initialisation.
+    Inverse problem is solved using a simple linear sliding law, based on a power 
+    relationship between velocity u and drag tau:
+
+    tau = C|u|^(m-1) * u                                                (1)
+
+    or equivalently      
+
+    |tau| = C|u|^m                                                      (2)
+
+    with exponent m = 1. We would like to convert the inverted field for Weertman 
+    coefficient C into an equivalent field for any m such that drag is unchanged 
+    upon initialisation.
 
     This can be done by solving the equation that equates both friction regimes.
 
-    C|u| = C_m|u|^m
-    C_m = C|u|^(1-m)
+    C|u| = C_m|u|^m                                                     (3)
+    C_m = C|u|^(1-m)                                                    (4)
+
+    However, this will result in C_m << 1 where |u| << 1. To avoid this, we instead
+    convert using:
+
+    C_m = C * [1+|u|^(1-m)]                                                (5)
+
+    When |u| << 1, this ensures that C_m > C.
+    When |u| >> 1, this approaches eq. (4)
+
+    An optional parameter uf (fast sliding speed) may also be set so that C_m is
+    converted into the field for a regularised Coulomb sliding law like that of 
+    Joughin et al (2019):
+
+    tau = C_f * [ uf*|u| / (|u|+uf) ]^m * (u / |u|)                    (6)
+
+    N.B. this form differs from slightly from that of Joughin et al (2019), which
+    is written:
+
+    tau = C_j * [ |u| / (|u|+uf) ]^(1/m) * (u / |u|)                   (7)
+
+    However, these are equivalent with m = 1/m (different convention for exponent)
+    and C_f = C_j / uf^m. BISICLES chooses this form so that the units for C_f
+    match that of C in the original sliding law.
+
+    Again, equating basal drag with that of our power law yields the conversion 
+    formula:
+
+    C_f = C_m * [ |u|/uf + 1 ]^m                     (8)
     '''
 
     print(f'Converting C into equivalent field for m={m}...')
-    speed = np.hypot(xVel, yVel)
-    C_m = C * (1.0 + speed**(1.0-m)) # regularising term to prevent C_m = 0
-
-    return C_m
+    u = np.hypot(xVel, yVel)
+    C_m = C * (1.0 + u**(1.0-m)) # 1.0 +... prevents C_m << 1 where |u| << 1
+        
+    if uf is None:
+        return C_m
+    else:
+        print(f'Applying additional factor for fast sliding speed uf={uf} ma-1...')
+        C_f = C_m * (u/uf + 1)**m
+        return C_f
 
 def extract_data(file: str, lev: int=3, order: int=0) -> Dataset:
    
@@ -63,16 +105,18 @@ def main(args) -> None:
 
     infile = args.infile
     outfile = args.outfile
-    lev = args.lev
+    lev = args.lev  # default 3
+    m = args.m if args.m else 1
+    uf = args.uf if args.uf else None
 
     ds = extract_data(infile, lev=lev)
     
-    if args.m:
-        ds['C_m'] = convert_C(ds.Cwshelf, ds.xVelb, ds.yVelb, args.m)
+    if m!=1 or uf is not None:
+        ds['C_m'] = convert_C(ds.Cwshelf, ds.xVelb, ds.yVelb, m=m, uf=uf)
     else:
         ds['C_m'] = ds['Cwshelf']
     
-    ds['C_m'].attrs['long_name'] = f'Weertman coefficient (m={args.m if args.m else 1})'
+    ds['C_m'].attrs['long_name'] = f'Weertman coefficient (m={m}, uf={uf})'
     ds['C_m'].attrs['units'] = 'Pa·m⁻¹·s'  # or appropriate
     
     print(f'saving to {outfile}...')
@@ -86,6 +130,7 @@ def main(args) -> None:
         for var in ds.data_vars
     }
     ds.to_netcdf(outfile, encoding=encoding)
+    print('done')
 
 
 if __name__ == "__main__":
@@ -98,6 +143,7 @@ if __name__ == "__main__":
 
     # add optional arguments
     parser.add_argument("-m", type=float, help="value of Weertman exponent")
+    parser.add_argument("--uf", type=float, help="fast sliding speed for regularised Coulomb sliding")
     parser.add_argument("--lev", type=int, default=3, help="max level of refinement")
 
     args = parser.parse_args()
