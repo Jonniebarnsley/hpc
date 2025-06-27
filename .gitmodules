@@ -8,7 +8,6 @@
 	path = bisicles/invprob_sliding
 	url = https://github.com/ggslc/bisicles-uob.git
 	branch = invprob_sliding
-[submodule "ocean_forcing/pyremap"]
-	path = ocean_forcing/pyremap
-	url = https://github.com/MPAS-Dev/pyremap.git
-
+[submodule "ocean_forcing"]
+	path = ocean_forcing
+	url = git@github.com:Jonniebarnsley/ismip6-antarctic-ocean-forcing.git
